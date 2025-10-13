@@ -1,89 +1,100 @@
-
 package chatapp;
 
-/**
- *
- * @author DELL
- */
-import java.util.Scanner;
+import java.util.Random;
 
-public class Login {
-    public boolean checkLogin(Registration user, String enteredUser, String enteredPass) {
-    return user.username.equals(enteredUser) && user.password.equals(enteredPass);
-}
+public class Message {
+    private String messageID;
+    private int messageCount;
+    private String recipient;
+    private String message;
+    private String messageHash;
+    private String status; // "sent", "stored", "discarded"
+    private static int totalMessagesSent = 0;
+    private static int messageCounter = 0;
 
-    public static void main(String[] args) {
-        Scanner input = new Scanner(System.in);
-        Registration user = new Registration();
-
-        // --- REGISTRATION ---
-        System.out.println("=== USER REGISTRATION ===");
-
-        // First name (To make it not empty )
-        System.out.print("Enter first name: ");
-        user.firstName = input.nextLine();
-        while (user.firstName.equals("")) {
-            System.out.println("First name cannot be empty.");
-            System.out.print("Enter first name: ");
-            user.firstName = input.nextLine();
-        }
-
-        // Last name  (To make it not empty )
-        System.out.print("Enter last name: ");
-        user.lastName = input.nextLine();
-        while (user.lastName.equals("")) {
-            System.out.println("Last name cannot be empty.");
-            System.out.print("Enter last name: ");
-            user.lastName = input.nextLine();
-        }
-
-        // Username (must contain underscore and be <= 5 characters)
-        System.out.print("Enter username(must have a '_' and is no more than 5 characters ): ");
-        user.username = input.nextLine();
-        while (!user.checkUserName()) {
-            System.out.println("Username is not correctly formatted, please ensure that your username contains an underscore and is no more than five characters in length.");
-            System.out.print("Enter username: ");
-            user.username = input.nextLine();
-        }
-        System.out.println("Username successfully captured.");
-
-        // Password (must be >= 8 characters, 1 uppercase, 1 digit, 1 special char)
-        System.out.print("Enter password (must be >= 8 characters, 1 uppercase, 1 digit, 1 special char): ");
-        user.password = input.nextLine();
-        while (!user.checkPasswordComplexity()) {
-            System.out.println("Password is not correctly formatted; please ensure that the password contains at least eight characters, a capital letter, a number, and a special character.");
-            System.out.print("Enter password: ");
-            user.password = input.nextLine();
-        }
-        System.out.println("Password successfully captured.");
-
-        // Cellphone number (must start with "27", be 11 digits, and have 3rd digit = 6,7,8)
-        System.out.print("Enter cell phone number (must start with \"27\", be 11 digits, and have 3rd digit = 6,7,8): ");
-        user.cellNumber = input.nextLine();
-        while (!user.checkCellPhoneNumber()) {
-            System.out.println("Cell phone number is not correctly formatted; please ensure that your number contains 11 digits, starts with 27, and the third digit is 6, 7, or 8.");
-            System.out.print("Enter cell phone number: ");
-            user.cellNumber = input.nextLine();
-        }
-        System.out.println("Cell phone number successfully captured.");
-
-        // Show registration result
-        System.out.println("\n" + user.registerUser());
-
-        // --- LOGIN ---
-        System.out.println("\n=== USER LOGIN ===");
-        System.out.print("Enter username: ");
-        String enteredUser = input.nextLine();
-        System.out.print("Enter password: ");
-        String enteredPass = input.nextLine();
-
-        // Check login credentials
-        if (user.username.equals(enteredUser) && user.password.equals(enteredPass)) {
-            System.out.println("Welcome " + user.firstName + " " + user.lastName + ", it is great to see you.");
-        } else {
-            System.out.println("Login failed. Username or password incorrect.");
-        }
-
-        input.close();
+    public Message() {
+        this.messageID = generateMessageID();
+        this.messageCount = ++messageCounter;
+        this.status = "pending";
     }
+
+    // Generate random 10-digit message ID
+    private String generateMessageID() {
+        Random rand = new Random();
+        long id = 1000000000L + (long)(rand.nextDouble() * 9000000000L);
+        return String.valueOf(id);
+    }
+
+    public boolean checkMessageID() {
+        return this.messageID.length() == 10;
+    }
+
+    public int checkRecipientCell(String recipient) {
+        // Check if number starts with international code and has proper length
+        if (recipient.startsWith("+") && recipient.length() <= 13 && recipient.length() >= 11) {
+            String numberPart = recipient.substring(1);
+            if (numberPart.matches("\\d+")) {
+                return 1; // Success
+            }
+        }
+        return 0; // Failure
+    }
+
+    public String createMessageHash() {
+        String firstTwo = messageID.substring(0, 2);
+        
+        // Extract first and last words from message
+        String[] words = message.split(" ");
+        String firstWord = words.length > 0 ? words[0].toUpperCase() : "";
+        String lastWord = words.length > 1 ? words[words.length - 1].toUpperCase() : firstWord;
+        
+        return firstTwo + ":" + messageCount + ":" + firstWord + lastWord;
+    }
+
+    public String sentMessage(int choice) {
+        switch (choice) {
+            case 1: // Send Message
+                totalMessagesSent++;
+                this.status = "sent";
+                // Store in JSON
+                JSONHandler.storeMessage(this);
+                return "Message successfully sent.";
+            case 2: // Disregard Message
+                this.status = "discarded";
+                return "Press 0 to delete message.";
+            case 3: // Store Message
+                this.status = "stored";
+                // Store in JSON
+                JSONHandler.storeMessage(this);
+                return "Message successfully stored.";
+            default:
+                return "Invalid option.";
+        }
+    }
+
+    public String printMessages() {
+        return "MessageID: " + messageID + 
+               "\nMessage Hash: " + messageHash + 
+               "\nRecipient: " + recipient + 
+               "\nMessage: " + message +
+               "\nStatus: " + status;
+    }
+
+    public static int returnTotalMessages() {
+        return totalMessagesSent;
+    }
+
+    // Getters and Setters
+    public String getMessageID() { return messageID; }
+    public int getMessageCount() { return messageCount; }
+    public String getRecipient() { return recipient; }
+    public void setRecipient(String recipient) { this.recipient = recipient; }
+    public String getMessage() { return message; }
+    public void setMessage(String message) { 
+        this.message = message;
+        this.messageHash = createMessageHash();
+    }
+    public String getMessageHash() { return messageHash; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }
