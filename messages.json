@@ -1,0 +1,38 @@
+[
+  {
+    "messageID": "8054271000",
+    "messageCount": 5,
+    "recipient": "+27733330029",
+    "message": "Hey babe",
+    "messageHash": "80:1:HEYBABE",
+    "status": "sent",
+    "timestamp": "2025-11-21 15:08:39"
+  },
+  {
+    "messageID": "5355991000",
+    "messageCount": 6,
+    "recipient": "+277333330039",
+    "message": "Fuck you niggas",
+    "messageHash": "53:1:FUCKNIGGAS",
+    "status": "sent",
+    "timestamp": "2025-11-21 15:08:39"
+  },
+  {
+    "messageID": "4207507670",
+    "messageCount": 7,
+    "recipient": "+27733330029",
+    "message": "hhjhjh",
+    "messageHash": "42:1:HHJHJHHHJHJH",
+    "status": "sent",
+    "timestamp": "2025-11-21 15:08:39"
+  },
+  {
+    "messageID": "4871551003",
+    "messageCount": 4,
+    "recipient": "+27733330029",
+    "message": "Mhluri",
+    "messageHash": "48:4:MHLURIMHLURI",
+    "status": "stored",
+    "timestamp": "2025-11-21 15:08:39"
+  }
+]
