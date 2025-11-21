@@ -3,16 +3,6 @@ package chatapp;
 public class TestRunner {
     private static int passed = 0;
     private static int failed = 0;
-    // In runMessageTests() method, change this test:
-// FROM:
-// Test 8: Message formatting
-// msg.setRecipient("0712345678");
-// assertEquals("+2712345678", msg.getRecipient(), "Local number should be formatted to international");
-
-// TO:
-// Test 8: Message formatting check
-msg.setRecipient("0712345678");
-assertEquals("0712345678", msg.getRecipient(), "Recipient should be stored as provided");
 
     public static void main(String[] args) {
         System.out.println("🚀 Starting QuickChat Automated Tests...");
@@ -64,17 +54,52 @@ assertEquals("0712345678", msg.getRecipient(), "Recipient should be stored as pr
         user.password = "password123!";
         assertFalse(user.checkPasswordComplexity(), "Password without uppercase should be invalid");
         
-        // Test 6: Valid SA cell number (international)
-        user.cellNumber = "+27838968976";
+        // Test 6: Invalid password (no digit)
+        user.password = "Password!";
+        assertFalse(user.checkPasswordComplexity(), "Password without digit should be invalid");
+        
+        // Test 7: Invalid password (no special char)
+        user.password = "Password123";
+        assertFalse(user.checkPasswordComplexity(), "Password without special character should be invalid");
+        
+        // Test 8: Invalid password (too short)
+        user.password = "Pass1!";
+        assertFalse(user.checkPasswordComplexity(), "Password shorter than 8 chars should be invalid");
+        
+        // Test 9: Valid SA cell number (international)
+        user.setCellNumber("+27838968976");
         assertTrue(user.checkCellPhoneNumber(), "Valid SA cell number '+27838968976' should be accepted");
+        assertEquals("+27838968976", user.getCellNumber(), "International number should be stored correctly");
         
-        // Test 7: Valid SA cell number (local)
-        user.cellNumber = "0712345678";
-        assertTrue(user.checkCellPhoneNumber(), "Valid SA cell number '0712345678' should be accepted");
+        // Test 10: Valid SA cell number (local - 07 format)
+        Registration user2 = new Registration();
+        user2.setCellNumber("0712345678");
+        assertTrue(user2.checkCellPhoneNumber(), "Valid SA cell number '0712345678' should be accepted");
+        assertEquals("+2712345678", user2.getCellNumber(), "Local 07 number should be formatted to international");
         
-        // Test 8: Invalid cell number
-        user.cellNumber = "08966553";
-        assertFalse(user.checkCellPhoneNumber(), "Invalid cell number '08966553' should be rejected");
+        // Test 11: Valid SA cell number (local - other 0 format)
+        Registration user3 = new Registration();
+        user3.setCellNumber("0821234567");
+        assertTrue(user3.checkCellPhoneNumber(), "Valid SA cell number '0821234567' should be accepted");
+        assertEquals("+27821234567", user3.getCellNumber(), "Local 0 number should be formatted to international");
+        
+        // Test 12: Invalid cell number
+        try {
+            Registration user4 = new Registration();
+            user4.setCellNumber("08966553");
+            assertFalse(user4.checkCellPhoneNumber(), "Invalid cell number '08966553' should be rejected");
+        } catch (IllegalArgumentException e) {
+            System.out.println("✅ PASS: Invalid cell number correctly threw exception: " + e.getMessage());
+            passed++;
+        }
+        
+        // Test 13: First name validation
+        user.firstName = "John";
+        assertTrue(user.checkFirstName(), "Non-empty first name should be valid");
+        
+        // Test 14: Last name validation
+        user.lastName = "Doe";
+        assertTrue(user.checkLastName(), "Non-empty last name should be valid");
     }
     
     private static void runLoginTests() {
@@ -95,14 +120,20 @@ assertEquals("0712345678", msg.getRecipient(), "Recipient should be stored as pr
         // Test 3: Failed login (wrong username)
         assertFalse(login.checkLogin(user, "wrong_user", "Ch&&sec@ke99!"), "Invalid username should be rejected");
         
-        // Test 4: Login status messages
+        // Test 4: Login status messages - success
         String successMsg = login.returnLoginStatus(true, user);
         assertTrue(successMsg.contains("Welcome John Doe"), "Success message should contain welcome text");
         assertTrue(successMsg.contains("it is great to see you again"), "Success message should contain greeting");
         
+        // Test 5: Login status messages - failure
         String failMsg = login.returnLoginStatus(false, user);
         assertTrue(failMsg.contains("Username or password incorrect"), "Fail message should contain error text");
         assertTrue(failMsg.contains("please try again"), "Fail message should contain retry instruction");
+        
+        // Test 6: Login with empty credentials
+        assertFalse(login.checkLogin(user, "", "Ch&&sec@ke99!"), "Empty username should be rejected");
+        assertFalse(login.checkLogin(user, "v__1", ""), "Empty password should be rejected");
+        assertFalse(login.checkLogin(user, "", ""), "Both empty credentials should be rejected");
     }
     
     private static void runMessageTests() {
@@ -110,47 +141,95 @@ assertEquals("0712345678", msg.getRecipient(), "Recipient should be stored as pr
         Message msg = new Message();
         
         // Test 1: Valid recipient (international)
-        assertEquals(1, msg.checkRecipientCell("+27718693002"), "Valid international recipient should return 1");
+        assertEquals(1, msg.checkRecipientCell("+27718693002"), "Valid international recipient '+27718693002' should return 1");
         
-        // Test 2: Valid recipient (local)
-        assertEquals(1, msg.checkRecipientCell("0712345678"), "Valid local recipient should return 1");
+        // Test 2: Valid recipient (local - 07 format)
+        assertEquals(1, msg.checkRecipientCell("0712345678"), "Valid local recipient '0712345678' should return 1");
         
-        // Test 3: Invalid recipient
-        assertEquals(0, msg.checkRecipientCell("08966553"), "Invalid recipient should return 0");
+        // Test 3: Valid recipient (local - other 0 format)
+        assertEquals(1, msg.checkRecipientCell("0821234567"), "Valid local recipient '0821234567' should return 1");
         
-        // Test 4: Message ID generation
+        // Test 4: Valid recipient (27 format without +)
+        assertEquals(1, msg.checkRecipientCell("27831234567"), "Valid recipient '27831234567' should return 1");
+        
+        // Test 5: Invalid recipient
+        assertEquals(0, msg.checkRecipientCell("08966553"), "Invalid recipient '08966553' should return 0");
+        
+        // Test 6: Message ID generation
         String messageID = msg.getMessageID();
         assertNotNull(messageID, "Message ID should not be null");
         assertEquals(10, messageID.length(), "Message ID should be 10 digits");
         assertTrue(messageID.matches("\\d+"), "Message ID should contain only digits");
         assertFalse(messageID.startsWith("0"), "Message ID should not start with 0");
         
-        // Test 5: Message hash generation
+        // Test 7: Message hash generation
         msg.setMessage("Hi Mike, can you join us for dinner tonight");
         String hash = msg.getMessageHash();
         assertNotNull(hash, "Message hash should not be null");
         assertTrue(hash.contains(":"), "Message hash should contain colon separators");
         
-        // Test 6: Message sending options
-        Message testMsg = new Message();
-        assertEquals("Message sent successfully!", testMsg.sentMessage(1), "Send message should return success");
-        assertEquals("sent", testMsg.getStatus(), "Message status should be 'sent'");
+        // Test 8: Message sending options - send
+        Message testMsg1 = new Message();
+        assertEquals("Message sent successfully!", testMsg1.sentMessage(1), "Send message should return success");
+        assertEquals("sent", testMsg1.getStatus(), "Message status should be 'sent'");
         
+        // Test 9: Message sending options - discard
         Message testMsg2 = new Message();
         assertEquals("Message discarded", testMsg2.sentMessage(2), "Discard message should return discard message");
         assertEquals("discarded", testMsg2.getStatus(), "Message status should be 'discarded'");
         
+        // Test 10: Message sending options - store
         Message testMsg3 = new Message();
         assertEquals("Message stored successfully!", testMsg3.sentMessage(3), "Store message should return store message");
         assertEquals("stored", testMsg3.getStatus(), "Message status should be 'stored'");
         
-        // Test 7: Invalid message option
+        // Test 11: Invalid message option
         Message testMsg4 = new Message();
         assertEquals("Invalid option", testMsg4.sentMessage(4), "Invalid option should return error");
         
-        // Test 8: Message formatting
-        msg.setRecipient("0712345678");
-        assertEquals("+2712345678", msg.getRecipient(), "Local number should be formatted to international");
+        // Test 12: Message formatting - local to international (07 format)
+        Message formatMsg1 = new Message();
+        formatMsg1.setRecipient("0712345678");
+        assertEquals("+2712345678", formatMsg1.getRecipient(), "Local 07 number should be automatically formatted to international");
+        
+        // Test 13: Message formatting - local to international (other 0 format)
+        Message formatMsg2 = new Message();
+        formatMsg2.setRecipient("0821234567");
+        assertEquals("+27821234567", formatMsg2.getRecipient(), "Local 0 number should be formatted to international");
+        
+        // Test 14: Message formatting - international unchanged
+        Message formatMsg3 = new Message();
+        formatMsg3.setRecipient("+27831234567");
+        assertEquals("+27831234567", formatMsg3.getRecipient(), "International format should remain unchanged");
+        
+        // Test 15: Message formatting - 27 format to international
+        Message formatMsg4 = new Message();
+        formatMsg4.setRecipient("27841234567");
+        assertEquals("+27841234567", formatMsg4.getRecipient(), "27 format should be formatted to international");
+        
+        // Test 16: Invalid recipient should throw exception
+        try {
+            Message invalidMsg = new Message();
+            invalidMsg.setRecipient("08966553");
+            System.out.println("❌ FAIL: Invalid recipient should throw exception");
+            failed++;
+        } catch (IllegalArgumentException e) {
+            System.out.println("✅ PASS: Invalid recipient correctly threw exception: " + e.getMessage());
+            passed++;
+        }
+        
+        // Test 17: Message count increments
+        int firstCount = msg.getMessageCount();
+        Message newMsg = new Message();
+        int secondCount = newMsg.getMessageCount();
+        assertTrue(secondCount > firstCount, "Message count should increment");
+        
+        // Test 18: Total messages counter
+        int initialTotal = Message.returnTotalMessages();
+        Message sentMsg = new Message();
+        sentMsg.sentMessage(1);
+        int finalTotal = Message.returnTotalMessages();
+        assertTrue(finalTotal > initialTotal, "Total messages should increase after sending");
     }
     
     private static void runArrayManagerTests() {
@@ -212,42 +291,69 @@ assertEquals("0712345678", msg.getRecipient(), "Recipient should be stored as pr
         assertEquals(totalMessages, manager.getMessageHashes().size(), "Hashes array should match total messages");
         assertEquals(totalMessages, manager.getMessageIDs().size(), "IDs array should match total messages");
         
-        // Test 9: Display methods
+        // Test 9: Display methods - senders and recipients
         String sendersInfo = manager.displaySendersAndRecipients("Test User");
         assertTrue(sendersInfo.contains("Test User"), "Senders info should contain sender name");
         assertTrue(sendersInfo.contains("+27834557896"), "Senders info should contain recipient");
         
+        // Test 10: Display methods - full report
         String report = manager.generateFullReport("Test User");
         assertTrue(report.contains("FULL SENT MESSAGES REPORT"), "Report should contain header");
         assertTrue(report.contains("Did you get the cake?"), "Report should contain message content");
         assertTrue(report.contains("SUMMARY"), "Report should contain summary");
+        
+        // Test 11: Empty arrays handling
+        ChatAppArrayManager emptyManager = new ChatAppArrayManager();
+        Message emptyLongest = emptyManager.findLongestMessage();
+        assertNull(emptyLongest, "Longest message should be null for empty arrays");
+        
+        java.util.ArrayList<Message> emptyResults = emptyManager.searchMessagesByRecipient("+27838884567");
+        assertTrue(emptyResults.isEmpty(), "Search results should be empty for empty arrays");
+        
+        String emptySendersInfo = emptyManager.displaySendersAndRecipients("Test User");
+        assertTrue(emptySendersInfo.contains("No sent messages"), "Should indicate no sent messages for empty arrays");
+        
+        String emptyReport = emptyManager.generateFullReport("Test User");
+        assertTrue(emptyReport.contains("No sent messages"), "Should indicate no sent messages for report");
     }
     
     private static void runJSONHandlerTests() {
         System.out.println("\n📄 Testing JSON Handler Class...");
         
-        // Test 1: Store and retrieve message
+        // Test 1: Store message to JSON
         Message testMsg = new Message();
         testMsg.setRecipient("+27123456789");
-        testMsg.setMessage("Test message for JSON");
+        testMsg.setMessage("Test message for JSON storage");
         testMsg.setStatus("sent");
         
         JSONHandler.storeMessage(testMsg);
         System.out.println("✅ INFO: Message stored to JSON");
         
-        // Test 2: Read messages (basic functionality)
+        // Test 2: Read messages from JSON
         try {
             java.util.ArrayList<Message> messages = JSONHandler.readAllMessages();
             assertTrue(messages != null, "Should be able to read messages from JSON");
             System.out.println("✅ INFO: Successfully read " + messages.size() + " messages from JSON");
         } catch (Exception e) {
-            System.out.println("⚠️  WARNING: Could not read JSON file (might be empty)");
+            System.out.println("⚠️  WARNING: Could not read JSON file (might be empty or first run)");
         }
         
         // Test 3: Get formatted messages
         String formatted = JSONHandler.getAllMessagesFormatted();
         assertTrue(formatted != null, "Should be able to get formatted messages");
         System.out.println("✅ INFO: Formatted messages retrieved successfully");
+        
+        // Test 4: Delete message from JSON
+        try {
+            boolean deleted = JSONHandler.deleteMessage(testMsg.getMessageID());
+            if (deleted) {
+                System.out.println("✅ INFO: Message successfully deleted from JSON");
+            } else {
+                System.out.println("⚠️  INFO: Message deletion may have failed (might not exist in JSON)");
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️  INFO: Message deletion may have failed: " + e.getMessage());
+        }
     }
     
     // Assertion methods
@@ -286,6 +392,16 @@ assertEquals("0712345678", msg.getRecipient(), "Recipient should be stored as pr
         }
     }
     
+    private static void assertNull(Object obj, String message) {
+        if (obj == null) {
+            System.out.println("✅ PASS: " + message);
+            passed++;
+        } else {
+            System.out.println("❌ FAIL: " + message);
+            failed++;
+        }
+    }
+    
     private static void printResults() {
         System.out.println("\n" + "=".repeat(60));
         System.out.println("📊 TEST SUMMARY");
@@ -293,7 +409,9 @@ assertEquals("0712345678", msg.getRecipient(), "Recipient should be stored as pr
         System.out.println("✅ Tests Passed: " + passed);
         System.out.println("❌ Tests Failed: " + failed);
         System.out.println("📋 Total Tests: " + (passed + failed));
-        System.out.println("🎯 Success Rate: " + (passed * 100 / (passed + failed)) + "%");
+        
+        int successRate = (passed + failed) > 0 ? (passed * 100 / (passed + failed)) : 0;
+        System.out.println("🎯 Success Rate: " + successRate + "%");
         
         if (failed == 0) {
             System.out.println("🎉 ALL TESTS PASSED! Your code is ready for production! 🎉");
