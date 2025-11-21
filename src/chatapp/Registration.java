@@ -51,15 +51,43 @@ public class Registration {
         return hasUppercase && hasDigit && hasSpecialChar;
     }
 
+    // FIXED: Proper South African cell phone number validation
     public boolean checkCellPhoneNumber() {
         if (cellNumber == null || cellNumber.isEmpty()) {
             return false;
         }
         
+        // Format 1: +27XXXXXXXXX (12 characters total)
         if (cellNumber.startsWith("+27") && cellNumber.length() == 12) {
-            String digits = cellNumber.substring(1);
-            return digits.matches("\\d+");
+            String numberPart = cellNumber.substring(3); // Get the part after +27
+            if (numberPart.matches("\\d{9}")) {
+                // Check if it starts with 6, 7, or 8 (common SA prefixes)
+                char firstDigit = numberPart.charAt(0);
+                return firstDigit == '6' || firstDigit == '7' || firstDigit == '8';
+            }
         }
+        
+        // Format 2: 07XXXXXXXX (10 characters - local format)
+        if (cellNumber.startsWith("07") && cellNumber.length() == 10) {
+            String numberPart = cellNumber.substring(2); // Get the part after 07
+            return numberPart.matches("\\d{8}");
+        }
+        
+        // Format 3: 27XXXXXXXXX (11 characters - without +)
+        if (cellNumber.startsWith("27") && cellNumber.length() == 11) {
+            String numberPart = cellNumber.substring(2); // Get the part after 27
+            if (numberPart.matches("\\d{9}")) {
+                char firstDigit = numberPart.charAt(0);
+                return firstDigit == '6' || firstDigit == '7' || firstDigit == '8';
+            }
+        }
+        
+        // Format 4: 0XXXXXXXXX (10 characters - other local formats)
+        if (cellNumber.startsWith("0") && cellNumber.length() == 10 && !cellNumber.startsWith("07")) {
+            String numberPart = cellNumber.substring(1); // Get the part after 0
+            return numberPart.matches("\\d{9}");
+        }
+        
         return false;
     }
 
