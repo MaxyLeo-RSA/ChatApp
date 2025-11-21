@@ -76,14 +76,79 @@ public class Message {
         return true;
     }
 
+    // FIXED: Proper South African phone number validation
     public int checkRecipientCell(String recipient) {
-        if (recipient.startsWith("+") && recipient.length() <= 13 && recipient.length() >= 11) {
-            String numberPart = recipient.substring(1);
-            if (numberPart.matches("\\d+")) {
-                return 1;
+        if (recipient == null || recipient.isEmpty()) {
+            return 0;
+        }
+        
+        // Format 1: +27XXXXXXXXX (12 characters total)
+        if (recipient.startsWith("+27") && recipient.length() == 12) {
+            String numberPart = recipient.substring(3); // Get the part after +27
+            if (numberPart.matches("\\d{9}")) {
+                // Check if it starts with 6, 7, or 8 (common SA prefixes)
+                char firstDigit = numberPart.charAt(0);
+                if (firstDigit == '6' || firstDigit == '7' || firstDigit == '8') {
+                    return 1; // Valid South African number
+                }
             }
         }
-        return 0;
+        
+        // Format 2: 07XXXXXXXX (10 characters - local format)
+        if (recipient.startsWith("07") && recipient.length() == 10) {
+            String numberPart = recipient.substring(2); // Get the part after 07
+            if (numberPart.matches("\\d{8}")) {
+                return 1; // Valid South African number
+            }
+        }
+        
+        // Format 3: 27XXXXXXXXX (11 characters - without +)
+        if (recipient.startsWith("27") && recipient.length() == 11) {
+            String numberPart = recipient.substring(2); // Get the part after 27
+            if (numberPart.matches("\\d{9}")) {
+                char firstDigit = numberPart.charAt(0);
+                if (firstDigit == '6' || firstDigit == '7' || firstDigit == '8') {
+                    return 1; // Valid South African number
+                }
+            }
+        }
+        
+        // Format 4: 0XXXXXXXXX (10 characters - other local formats)
+        if (recipient.startsWith("0") && recipient.length() == 10) {
+            String numberPart = recipient.substring(1); // Get the part after 0
+            if (numberPart.matches("\\d{9}")) {
+                return 1; // Valid South African number
+            }
+        }
+        
+        return 0; // Invalid South African number
+    }
+
+    // FIXED: Proper phone number formatting
+    public String formatSouthAfricanNumber(String number) {
+        if (number == null) return number;
+        
+        // If it's in 07 format, convert to +27
+        if (number.startsWith("07") && number.length() == 10) {
+            return "+27" + number.substring(2);
+        }
+        
+        // If it's in 0 format (other local), convert to +27
+        if (number.startsWith("0") && number.length() == 10 && !number.startsWith("07")) {
+            return "+27" + number.substring(1);
+        }
+        
+        // If it's in 27 format (without +), add the +
+        if (number.startsWith("27") && number.length() == 11 && !number.startsWith("+")) {
+            return "+" + number;
+        }
+        
+        // If it's already in +27 format, return as is
+        if (number.startsWith("+27") && number.length() == 12) {
+            return number;
+        }
+        
+        return number; // Return original if no formatting applied
     }
 
     public String createMessageHash() {
@@ -144,7 +209,10 @@ public class Message {
     public void setMessageCount(int messageCount) { this.messageCount = messageCount; }
     
     public String getRecipient() { return recipient; }
-    public void setRecipient(String recipient) { this.recipient = recipient; }
+    public void setRecipient(String recipient) { 
+        // Store the recipient as provided, formatting happens in validation
+        this.recipient = recipient;
+    }
     
     public String getMessage() { return message; }
     public void setMessage(String message) { 
