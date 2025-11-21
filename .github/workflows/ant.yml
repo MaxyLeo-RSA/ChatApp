@@ -1,4 +1,4 @@
-name: Java CI Tests
+name: Java Tests
 
 on:
   push:
@@ -20,34 +20,36 @@ jobs:
       with:
         java-version: '11'
         distribution: 'temurin'
-        cache: 'maven'
         
-    - name: 📁 Create build directory
-      run: mkdir -p build
-      
+    - name: 🔍 Check Java files
+      run: |
+        echo "Java files found:"
+        find . -name "*.java" -type f | head -10
+        echo "Total Java files: $(find . -name "*.java" -type f | wc -l)"
+        
+    - name: 📁 Create directory structure
+      run: |
+        mkdir -p build
+        # Move all Java files to proper structure if needed
+        if [ ! -d "src/chatapp" ]; then
+          mkdir -p src/chatapp
+          find . -maxdepth 1 -name "*.java" -exec mv {} src/chatapp/ \; 2>/dev/null || true
+        fi
+        
     - name: 🏗️ Compile Java source
       run: |
-        find . -name "*.java" -exec javac -d build {} \;
-      working-directory: ${{ github.workspace }}
-      
-    - name: 🧪 Run Automated Tests
-      run: java -cp build chatapp.TestRunner
-      working-directory: ${{ github.workspace }}
-      
-    - name: 📦 Upload test artifacts
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: |
-          build/
-        retention-days: 7
+        echo "Compiling Java files..."
+        javac -d build src/chatapp/*.java
+        echo "Compilation completed successfully!"
         
-    - name: 📋 Upload test report
+    - name: 🧪 Run Automated Tests
+      run: |
+        echo "Running test suite..."
+        java -cp build chatapp.TestRunner
+        echo "Tests completed!"
+        
+    - name: 📊 Test Results
       if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-report
-        path: |
-          messages.json
-        retention-days: 7
+      run: |
+        echo "=== TEST EXECUTION COMPLETE ==="
+        echo "View the logs above for detailed results"
