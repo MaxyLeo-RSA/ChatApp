@@ -51,7 +51,7 @@ public class Registration {
         return hasUppercase && hasDigit && hasSpecialChar;
     }
 
-    // FIXED: Proper South African cell phone number validation
+    // South African cell phone number validation
     public boolean checkCellPhoneNumber() {
         if (cellNumber == null || cellNumber.isEmpty()) {
             return false;
@@ -59,9 +59,8 @@ public class Registration {
         
         // Format 1: +27XXXXXXXXX (12 characters total)
         if (cellNumber.startsWith("+27") && cellNumber.length() == 12) {
-            String numberPart = cellNumber.substring(3); // Get the part after +27
+            String numberPart = cellNumber.substring(3);
             if (numberPart.matches("\\d{9}")) {
-                // Check if it starts with 6, 7, or 8 (common SA prefixes)
                 char firstDigit = numberPart.charAt(0);
                 return firstDigit == '6' || firstDigit == '7' || firstDigit == '8';
             }
@@ -69,13 +68,13 @@ public class Registration {
         
         // Format 2: 07XXXXXXXX (10 characters - local format)
         if (cellNumber.startsWith("07") && cellNumber.length() == 10) {
-            String numberPart = cellNumber.substring(2); // Get the part after 07
+            String numberPart = cellNumber.substring(2);
             return numberPart.matches("\\d{8}");
         }
         
         // Format 3: 27XXXXXXXXX (11 characters - without +)
         if (cellNumber.startsWith("27") && cellNumber.length() == 11) {
-            String numberPart = cellNumber.substring(2); // Get the part after 27
+            String numberPart = cellNumber.substring(2);
             if (numberPart.matches("\\d{9}")) {
                 char firstDigit = numberPart.charAt(0);
                 return firstDigit == '6' || firstDigit == '7' || firstDigit == '8';
@@ -84,11 +83,51 @@ public class Registration {
         
         // Format 4: 0XXXXXXXXX (10 characters - other local formats)
         if (cellNumber.startsWith("0") && cellNumber.length() == 10 && !cellNumber.startsWith("07")) {
-            String numberPart = cellNumber.substring(1); // Get the part after 0
+            String numberPart = cellNumber.substring(1);
             return numberPart.matches("\\d{9}");
         }
         
         return false;
+    }
+
+    // NEW: Method to format cell number to international format
+    public String formatCellNumber(String number) {
+        if (number == null) return number;
+        
+        // If it's in 07 format, convert to +27
+        if (number.startsWith("07") && number.length() == 10) {
+            return "+27" + number.substring(2);
+        }
+        
+        // If it's in 0 format (other local), convert to +27
+        if (number.startsWith("0") && number.length() == 10 && !number.startsWith("07")) {
+            return "+27" + number.substring(1);
+        }
+        
+        // If it's in 27 format (without +), add the +
+        if (number.startsWith("27") && number.length() == 11 && !number.startsWith("+")) {
+            return "+" + number;
+        }
+        
+        // If it's already in +27 format, return as is
+        if (number.startsWith("+27") && number.length() == 12) {
+            return number;
+        }
+        
+        return number;
+    }
+
+    // NEW: Setter that automatically formats the cell number
+    public void setCellNumber(String cellNumber) {
+        if (!checkCellPhoneNumber(cellNumber)) {
+            throw new IllegalArgumentException("Invalid South African cell number: " + cellNumber);
+        }
+        this.cellNumber = formatCellNumber(cellNumber);
+    }
+
+    // CHANGED: Getter for cellNumber
+    public String getCellNumber() {
+        return cellNumber;
     }
 
     public String registerUser() {
