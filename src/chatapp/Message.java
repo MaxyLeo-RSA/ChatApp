@@ -76,7 +76,7 @@ public class Message {
         return true;
     }
 
-    // FIXED: Proper South African phone number validation
+    // South African phone number validation
     public int checkRecipientCell(String recipient) {
         if (recipient == null || recipient.isEmpty()) {
             return 0;
@@ -84,47 +84,46 @@ public class Message {
         
         // Format 1: +27XXXXXXXXX (12 characters total)
         if (recipient.startsWith("+27") && recipient.length() == 12) {
-            String numberPart = recipient.substring(3); // Get the part after +27
+            String numberPart = recipient.substring(3);
             if (numberPart.matches("\\d{9}")) {
-                // Check if it starts with 6, 7, or 8 (common SA prefixes)
                 char firstDigit = numberPart.charAt(0);
                 if (firstDigit == '6' || firstDigit == '7' || firstDigit == '8') {
-                    return 1; // Valid South African number
+                    return 1;
                 }
             }
         }
         
         // Format 2: 07XXXXXXXX (10 characters - local format)
         if (recipient.startsWith("07") && recipient.length() == 10) {
-            String numberPart = recipient.substring(2); // Get the part after 07
+            String numberPart = recipient.substring(2);
             if (numberPart.matches("\\d{8}")) {
-                return 1; // Valid South African number
+                return 1;
             }
         }
         
         // Format 3: 27XXXXXXXXX (11 characters - without +)
         if (recipient.startsWith("27") && recipient.length() == 11) {
-            String numberPart = recipient.substring(2); // Get the part after 27
+            String numberPart = recipient.substring(2);
             if (numberPart.matches("\\d{9}")) {
                 char firstDigit = numberPart.charAt(0);
                 if (firstDigit == '6' || firstDigit == '7' || firstDigit == '8') {
-                    return 1; // Valid South African number
+                    return 1;
                 }
             }
         }
         
         // Format 4: 0XXXXXXXXX (10 characters - other local formats)
         if (recipient.startsWith("0") && recipient.length() == 10) {
-            String numberPart = recipient.substring(1); // Get the part after 0
+            String numberPart = recipient.substring(1);
             if (numberPart.matches("\\d{9}")) {
-                return 1; // Valid South African number
+                return 1;
             }
         }
         
-        return 0; // Invalid South African number
+        return 0;
     }
 
-    // FIXED: Proper phone number formatting
+    // Automatically formats phone numbers to international format
     public String formatSouthAfricanNumber(String number) {
         if (number == null) return number;
         
@@ -148,7 +147,7 @@ public class Message {
             return number;
         }
         
-        return number; // Return original if no formatting applied
+        return number;
     }
 
     public String createMessageHash() {
@@ -209,9 +208,15 @@ public class Message {
     public void setMessageCount(int messageCount) { this.messageCount = messageCount; }
     
     public String getRecipient() { return recipient; }
+    
+    // CHANGED: Now automatically formats the recipient when setting
     public void setRecipient(String recipient) { 
-        // Store the recipient as provided, formatting happens in validation
-        this.recipient = recipient;
+        // Validate first
+        if (checkRecipientCell(recipient) == 0) {
+            throw new IllegalArgumentException("Invalid South African cell number: " + recipient);
+        }
+        // Then format and store
+        this.recipient = formatSouthAfricanNumber(recipient);
     }
     
     public String getMessage() { return message; }
