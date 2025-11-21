@@ -1,0 +1,30 @@
+# Compiled class files
+*.class
+build/
+out/
+
+# Package Files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# JSON data files (optional - include if you want to test with actual data)
+# messages.json
